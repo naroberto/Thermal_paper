@@ -6,7 +6,7 @@ Created on Thu Jul 15 18:19:36 2021
 
 Input:  .mp4 videos from GoPro Hero 6, Side camera
 Output: Rotated and cropped RGB.tif files of entire video
-## see also: https://stackoverflow.com/questions/33311153/python-extracting-and-saving-video-frames
+
 """
 
 import cv2
@@ -16,10 +16,10 @@ import glob
 
 ## ----- INPUT -------------
 dates = ['07_07','08_07','09_07']
-runs =  ['run_1','run_2','run_3','run_4','run_5']
+runs =  ['run_1','run_2','run_3','run_4','run_5']       # 5 experimental runs per day
 
-for date in dates:
-    for run in runs:
+for date in dates:          # Loop over dates
+    for run in runs:        # Loop over runs 
         side_cam = False
         video_ID = 1            # Go from 1  = acclim, 2 = treat_part1 , 3 = treat_part_2
         ## ----- END INPUT ---------
@@ -107,6 +107,7 @@ for date in dates:
                 #count = count+1  # this line ensures that non exisitng frames are skipped!
                 #if count >= 20:        # Stop after ith frame of original file (for debugging)
                  #   break
+                    
             if count == frame_count-5:
                 break
                 cap.release()
