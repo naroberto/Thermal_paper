@@ -2,13 +2,13 @@
 """
 Created on Thu Jul 15 18:19:36 2021
 
-
 @author: Naudascher
 
-Input: GoPro_video
-Output: rotated and cropped RGB.tif files of entire video
+Input:  .mp4 videos from GoPro Hero 6, Side camera
+Output: Rotated and cropped RGB.tif files of entire video
 ## see also: https://stackoverflow.com/questions/33311153/python-extracting-and-saving-video-frames
 """
+
 import cv2
 import os
 import pathlib
@@ -48,7 +48,7 @@ for date in dates:
         if not os.path.exists(out_tif_folder):
             os.makedirs(out_tif_folder)
         
-        ## Read parameters for rotation and cropping
+        # Read parameters for rotation and cropping (output of step_1)
         with open(params) as f:
             contents = f.readlines()
         x = int(contents[1])            # rotation center in original frame, upper left corner is (0,0)
@@ -69,7 +69,6 @@ for date in dates:
             return cv2.warpAffine(img, M, (w,h))
         
         #print (duration)
-        
         #cam1
         #input_vid = "D:\Thermal_Experiments\Time_test\cam1\cam1_part1\GOPR1152.mp4"
         #output_loc = "D:\Thermal_Experiments\Time_test\cam1\cam1_part1\GOPR1152\ "
@@ -98,14 +97,12 @@ for date in dates:
                 rotated_cropped = rotated[y:y+height, x-dx:x-dx+width]        # Crop
                 #print('rotated_cropped dim:',rotated_cropped.shape[:2])
                 
-                cv2.imwrite(os.path.join(out_tif_folder,"img_%05d.tif") % count, rotated_cropped) 
-               
+                cv2.imwrite(os.path.join(out_tif_folder,"img_%05d.tif") % count, rotated_cropped) # store frame
                 count = count + 1  # Use all frames
-               
-                
-                
+            
                 #count += skip_frame # skip the frames
                 print("Current frame: " + str(count) + " ; " + date + " ; " +  run + " ; " + vid + " ; Side_cam: " + str(side_cam))
+            
             #else:
                 #count = count+1  # this line ensures that non exisitng frames are skipped!
                 #if count >= 20:        # Stop after ith frame of original file (for debugging)
