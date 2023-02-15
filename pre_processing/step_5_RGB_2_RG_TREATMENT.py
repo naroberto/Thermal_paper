@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Aug 13 15:43:40 2021
-
 @author: Naudascher
-"""
 
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jul 20 18:48:40 2021
-@author: Naudascher
+Description: 
+This script is for the top and side camera during TREATMENT phase (20 minutes after gate removal, during which the fish have access to the entire tank)
+Input:  Output of step_2 and 3 (cropped and rotated color images and time conversion file.txt).
+Output: RED and GREEN channel of each image, time stamped in the file name.
+
 """
 import cv2
 import os
