@@ -56,13 +56,12 @@ else:
 
 # CREATE file path
 in_path = os.path.join(in_dir,'cal_img.tif')
-# ouput 
+# output 
 Nametxt = os.path.join(in_dir,'params.txt')
 out_path = os.path.join(in_dir, 'cal_img_rot_crop.tif')
 
 
 # cropping extent top_cam 
- 
 # set area to be set to 0 below edge to avoid reflections on the wall
 delta_Y = 0 #20 # Pixel
 
@@ -71,7 +70,7 @@ x_cord = []
 y_cord = []
 rot_angle_all = [] # angle between horizontal and shoreline
 
-
+# FUNCTIONS
 def click_event(event, x, y, flags, params):
 # Function to display and store the coordinates of Rot_center and the rot_angle_
 # First click -> center for rotation, click at the upper intersection of the arena
