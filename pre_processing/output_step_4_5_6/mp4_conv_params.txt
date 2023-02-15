@@ -1,0 +1,15 @@
+date
+04_07
+run_2
+fps
+24
+frame_skip_median
+48
+R_zero
+240
+R_max
+255
+R_min
+1
+codec
+MP4V
