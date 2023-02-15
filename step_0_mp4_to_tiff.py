@@ -12,7 +12,7 @@ In a first step we can assume that for each day of experiments, only one calibra
 import cv2
 import os
 
-# run1
+# day 1
 # side_cam
 input_vid:  str = r'F:\Thermal_exp\Final_runs\09_07\side_cam\run_1\vid_1\GOPR1255.mp4'
 out_folder: str = r'F:\Thermal_exp\Final_runs\09_07\Final\crop_rot_params_side_run_1'
