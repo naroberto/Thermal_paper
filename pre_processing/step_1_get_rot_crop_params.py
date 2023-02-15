@@ -5,25 +5,29 @@ Created on Thu Jul 15 15:50:40 2021
 @author: Naudascher
 # adapted from https://www.geeksforgeeks.org/displaying-the-coordinates-of-the-points-clicked-on-the-image-using-python-opencv/
 
-# GOAL:
-# - set left upper Aquarium corner as origin for rotation,
-# - select 5 or more points along the upper edge of the tank as the line that will be horizontal
-# - calc. the average rotation angle based on this
-# - Rot. image
+# Goal: Correct for the fact that the Side camera was slighty moved, depending on the experimental day. 
+
+# Description:
+# - set left upper Aquarium corner as origin for rotation and coordinate system. 
+# - select 5 or more points along the upper edge of the tank, the script will rotate the image so this line becomes horizontal
+# - store that rotation angle 
 # - Crop image to size: according to h, w, dx 
-# - store params for further use in step_2
-# Note: The center of rotation remains the same if we always selects the same reference its location will therefore be identical on each image. even across experiments.
-- do it 
+# - store rotation and crop parametrers for further use in step_2
+# - this only has to be run for the side came (in this publication)
+
+# Output: The center of rotation (and origin of the coordinate system) and the size of each image, will be identical on each image and across experiments.
+
 """
+
 # - do it for side cam (center of rotation is upper left corner of aquarium)
 
 import cv2
 import numpy as np
 import os
 
-
+# select input
 date = '09_07'
-top_cam = False
+top_cam = False # select side cam
 pre_rot_180 = 0 # only if the video needs to be pre_rotated -> fish acclim area shoudl always be on the left
 
 # Select folder with calibration image
@@ -71,8 +75,7 @@ rot_angle_all = [] # angle between horizontal and shoreline
 def click_event(event, x, y, flags, params):
 # Function to display and store the coordinates of Rot_center and the rot_angle_
 # First click -> center for rotation, click at the upper intersection of the arena
-# Clicks after -> upper right edge of the arena, this will be horizontal after...
-    
+# Clicks after ->edge that will be horizontal after...
     
     # checking for left mouse clicks
     if event == cv2.EVENT_LBUTTONDOWN:
