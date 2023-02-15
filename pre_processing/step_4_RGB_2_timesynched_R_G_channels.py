@@ -8,7 +8,7 @@ Created on Tue Jul 20 18:48:40 2021
 Description: 
 This script is for the top and side camera during acclimation phase (first 15 minutes during which the fish are in the left compartment)
 
-Input:  Output of step_2 and 3 (cropped and rotated color images).
+Input:  Output of step_2 and 3 (cropped and rotated color images and time conversion file.txt).
 Output: RED and GREEN channel of each image, time stamped in the file name.
 
 """
