@@ -3,8 +3,6 @@
 Created on Tue Jul 20 18:48:40 2021
 @author: Naudascher
 
-# THIS SCRIPT IS FOR ACCLIMATION PHASE ----------------------------------
-
 Description: 
 This script is for the top and side camera during acclimation phase (first 15 minutes during which the fish are in the left compartment)
 
