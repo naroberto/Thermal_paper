@@ -6,7 +6,7 @@ Created on Fri Aug 13 15:43:40 2021
 Description: 
 This script is for the top and side camera during TREATMENT phase (20 minutes after gate removal, during which the fish have access to the entire tank)
 Input:  Output of step_2 and 3 (cropped and rotated color images and time conversion file.txt).
-Output: RED and GREEN channel of each image, time stamped in the file name.
+Output: RED and GREEN channel of each RGB-image, time stamp in the file name (.tif)
 
 """
 import cv2
