@@ -1,0 +1,20 @@
+acclim_start_frame
+748
+acclim_start_time
+2021-07-04 13:34:03.050000
+treat_start_frame
+1591
+treat_start_time
+2021-07-04 13:54:50.725000
+acclim_synch_idx
+4679
+acclim_synch_frame
+94
+acclim_synch_time
+2021-07-04 13:33:35.8
+treat_synch_idx
+10788
+treat_synch_frame
+316
+treat_synch_time
+2021-07-04 13:53:57.6
