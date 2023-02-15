@@ -3,15 +3,23 @@
 Created on Tue Oct 12 14:28:16 2021
 
 @author: Naudascher
-"""
 
-# -*- coding: utf-8 -*-
-"""
-Created on Mon Oct 11 10:36:13 2021
+Description: 
+Run it for acclimation and treatment phase of each experiment.
+This code prepares the green image channel for tracking in TRex. 
+- subtract the temporal median background from each pixel
+- rescale the image to 8 bit
+- mask pixels with high temporal STD to reduce noise
 
-@author: Naudascher
-"""
+Input: 
+- green channel .tif images (from step 4 and 6) 
 
+Output: 
+- raw_video in (.mp4)
+- Background sibtracted video for tracking in TRex
+- conversion parameters (.txt)
+
+"""
 import numpy as np
 import pandas as pd
 import tracktor as tr
@@ -27,23 +35,23 @@ from scipy.spatial.distance import cdist
 dates = ['29_06','01_07','02_07','04_07'] #,'05_07','06_07','07_07','08_07','09_07']
 runs =  ['run_1','run_2','run_3','run_4','run_5']
 phase_folders = ['acclim_side_green','acclim_top_green','treat_top_green','treat_side_green'] # Select pahse from ['acclim','up_1','p_1','d_1','b_1','up_2','p_2','d_2','b_2','up_3','p_3','d_3','b_3',]
-fps = 24 # this needs to be a divisor of 15
-codec = 'MP4V'
-# ---------------------
+fps = 24         # framerate of recording
+codec = 'MP4V'   # compression codec
 
-#exp_ID = date + '_' + run + '_' + phase
-
-# PARAMS ----
-# for background subtraction
-frame_skip_median = 2*24 # use every 48th frame for median
-R_zero = 240        #125 # rescaling value for zero values
+# PARAMS for background subtraction, kept constant for all experiments
+frame_skip_median = 2*24 # use every 48th frame (0.5 fps) for median, this increases speed, not every frame is needed to derive a median... 
+R_zero = 240        # rescaling value for zero values
 R_min = 1           # new min value in rescaled range
 R_max = 255   
+
+# ---------------------
+
 for date in dates:
     for run in runs:
         out_base_folder = os.path.join(r'F:\Vids_for_tracking',date,run)
         Nametxt =             os.path.join(out_base_folder ,'mp4_conv_params.txt')
-        if not os.path.exists(os.path.join(out_base_folder)):
+        
+        if not os.path.exists(os.path.join(out_base_folder)): # create outpu folder
                 os.makedirs(os.path.join(out_base_folder))
         
         for phase in phase_folders:
@@ -61,9 +69,9 @@ for date in dates:
                 for i in (list_median):
                 
                     if i.endswith(".tif"):
-                        img = cv2.imread(os.path.join(in_dir, i))  # Load frame
+                        img = cv2.imread(os.path.join(in_dir, i))        # Load frame
                         img_grey = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)  # Convert to grayscale
-                        frames.append(img_grey)  # Collect all frame
+                        frames.append(img_grey)                          # Collect all frames
                         count += 1
                         print('appending frame for Median: ', count)
                         continue
@@ -88,65 +96,63 @@ for date in dates:
                 return median_grey, std_dev
             
             def subtractMedian2(frame,median_grey,R_zero,R_min,R_max):
-                # Fre approach, Subtract median
+                # Subtract median
                 frame_grey = np.array(cv2.cvtColor(np.uint8(frame), cv2.COLOR_RGB2GRAY))
-                frame_grey = frame_grey.astype(np.int32)  # enlarge frame
-                cor_frame = np.array(frame_grey -  median_grey)  # subtract median
+                frame_grey = frame_grey.astype(np.int32)            # enlarge frame too 32 bit
+                cor_frame = np.array(frame_grey -  median_grey)     # subtract median
                 
                 # Reshift pixel values tp positive values
                 scale_frame = cor_frame + R_zero
-                scale_frame = np.where(scale_frame < R_min, R_min, scale_frame)
-                scale_frame = np.where(scale_frame > R_max, R_max, scale_frame)
-                scale_frame = np.uint8(scale_frame)
+                scale_frame = np.where(scale_frame < R_min, R_min, scale_frame) # set low value to R_min
+                scale_frame = np.where(scale_frame > R_max, R_max, scale_frame) # set high values to R_max
+                scale_frame = np.uint8(scale_frame)             # convert to 8 bit
                 return scale_frame
             
             # Median background
             list_all = os.listdir(in_dir) # all frames of that phase are already in one folder
             median,std_ = getMedian(0, frame_skip_median)
-            
-            # total frames
-            # video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) - 1
-            # Check length of video!
-            video_length = int(len(list_all))
+           
+            # video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) - 1  # Check length of video!
+           
+            video_length = int(len(list_all))  # total frames
             print('Total frames: ', video_length)
+            
             if phase =='treat_side_green' or phase =='treat_side_top':
                 if video_length < int(20*24*60):
-                    print('SEQUENCE TO SHORT: ',video_length)
+                    print('SEQUENCE TO SHORT: ',video_length)v# check that videos are long enough...
                     break
+                    
             if phase =='acclim_side_green' or phase =='acclim_side_top':
                 if video_length < int(15*24*60):
                     print('SEQUENCE TO SHORT: ',video_length)
                     break
-            
-        
-            # video objects fro greyscale vid
+                    
+            # create video objects for raw video and background subtractes video 
             width =  median.shape[1]
             height = median.shape[0]
-            out = cv2.VideoWriter(os.path.join(out_base_folder,phase +'.mp4'),cv2.VideoWriter_fourcc(*'MP4V'), 24.0, (width,height),isColor=False)
+            out =     cv2.VideoWriter(os.path.join(out_base_folder,phase +'.mp4'),cv2.VideoWriter_fourcc(*'MP4V'), 24.0, (width,height),isColor=False)
             out_raw = cv2.VideoWriter(os.path.join(out_base_folder,phase +'_raw.mp4'),cv2.VideoWriter_fourcc(*'MP4V'), 24.0, (width,height),isColor=False)
-            # try codec avc1
+
             # Grab images for Tracking
-            for image in (list_all[0:len(list_all):int(24/fps)]): #  #[2800:3250]): # run code on subsection of frames...
+            for image in (list_all[0:len(list_all):int(24/fps)]):            #[2800:3250]): # run code on subsection of frames...
             
                 if image.endswith(".tif"):
-            
+       
                     frame = cv2.imread(os.path.join(in_dir, image))
-                    out_raw.write(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY))
-                    # subtrack background
+                    out_raw.write(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)) # write raw frame to video object
+                    
+                    # subtrack Median using predefine function 
                     frame = subtractMedian2(frame,median,R_zero,R_min,R_max) # subtrackt median background and rescale 
                     
+                    # for side camera we mask pixel values with high std, to reduce tracking probelm later on.
                     if phase == 'acclim_side_green' or phase == 'treat_side_green':
-                        frame[0:30,:] = 240 #set very top to grey
+                        frame[0:30,:] = 240             # set very top to grey
                         std_mask = frame[30:50,:]
-                        std_mask[std_[30:50,:] > 20] = 240 # set values with high std_dev to white so they do not disturb tracking; these are regions with waves...
-                        
-                        
-                        frame[30:50,:] = std_mask # overwrite frame in the area of water surface, here we have lots of fluctuations
+                        std_mask[std_[30:50,:] > 20] = 240 # set values with high std_dev to white so they do not disturb tracking; these are regions with waves..
+                        frame[30:50,:] = std_mask          # overwrite pixels in the area of water surface, here we have lots of fluctuations
            
-                    # write frame
+                    # write backgroudn subtracted frame to video object
                     out.write(frame)
-                    
-                    
                     print('CURRENT FRAME: ',image)
                  
             out.release()
@@ -154,7 +160,7 @@ for date in dates:
             print('COMPLETE:',phase)
             cv2.destroyAllWindows()
                 
-        ## save params as .txt
+        ## save converion parameters as .txt file
         outF = open(Nametxt, "w")
         #for line in [header]: # , basestart]:
         outF = open(Nametxt, "a")             
