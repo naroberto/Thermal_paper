@@ -3,10 +3,12 @@
 Created on Fri Aug 13 15:43:40 2021
 @author: Naudascher
 
-Description: 
+Description: (same as step 4 but for treatment phase) 
 This script is for the top and side camera during TREATMENT phase (20 minutes after gate removal, during which the fish have access to the entire tank)
+Here we split the RGB image into RED and GREEN channel. 
+
 Input:  Output of step_2 and 3 (cropped and rotated color images and time conversion file.txt).
-Output: RED and GREEN channel of each RGB-image, time stamp in the file name (.tif)
+Output: RED and GREEN channel of each image, time stamped in the file name.
 
 """
 import cv2
@@ -46,7 +48,6 @@ for date in dates:
         if not os.path.exists(g_top_path):
             os.makedirs(g_top_path)
             
-        
         list_part_1 = os.listdir(in_dir_top_treat_part1)
         frames_in_part_1 = len(list_part_1)
         list_part_2 = os.listdir(in_dir_top_treat_part2)
