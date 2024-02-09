@@ -3,12 +3,13 @@
 Created on Tue Jul 20 11:48:00 2021
 
 @author: Naudascher
-- plot thermal data and find synchronization time (time at which the temp sensor was touched)
-- 
+
+Description: 
+- plot thermal data and find synchronization time (time at which the temp sensor was touched by hand to synchronize thermal probes with the videos).
+- We set the start time of the experiment as the moment when the gate detaches from the water surface.
+- Open .tif stack of acclim and treatment phase in Fiji or imageJ in parallel.
+
 """
-
-# to work with this open .tif stack of acclim and treatment phase
-
 import plotly.io as pio
 import plotly.express as px
 import pandas as pd
@@ -18,40 +19,35 @@ import math
 
 pio.renderers.default='browser'  # set browser as display 
 
-# INPUT GOES HERE
+# INPUT ------------------------
 date = '09_07'
 run =  'run_4'
 temp_file =     'run_4_2021_07_09_14_10_21.dat'
-# END INPUT
+# -----------------------------
 
 exp_ID =        '_' + date + '_' + run
 
-
-#out_data_folder = os.path.join('D:\Thermal_exp\Final_runs',date,'Final',run)# check if you use data on D: or G: drive
-#in_folder =       os.path.join('D:\Thermal_exp\Final_runs',date,'temp')
-
-
+# Folders
 out_data_folder = os.path.join('G:\Thermal_exp\Final_runs',date,'Final',run)
 in_folder =       os.path.join('G:\Thermal_exp\Final_runs',date,'temp')
-
 
 # Select probe to show (mostly probe 1 -Top left; sometimes probe 4 as well (-top right))
 probe = 1
 
-# FINE TUNE THESE during the run
+# Manually fine TUNE THESE during the run
 # set acclim start based on plot from this script
 acclim_synch_frame = 145    # load vid_1 stack in imageJ, this is the frame coinciding with the respective Temp_peak, # frame ID where the finger leaves the sensor
 acclim_start_frame = 876  # frame ID where the fish is released and no surface waves are present anymore, this is the real start of the run
 acclim_synch_idx = 6997    # this is the row of the temperature data where we see the peak for the acclimation start
 #acclim_start_time = acclim_start_frame + (acclim_start_frame - acclim_synch_frame) * (1/24) 
 
-# Open the fiji stack at the same time
+# Open the fiji stack at the same time and compare start of experiment.
 
 # TREATMENT
 # (df.loc[[acclim_synch_idx],['TIMESTAMP']])
-treat_synch_frame  =128 # load vid_2 stack first frame where finger is not on sensor anymore
-treat_start_frame = 762  # frame ID where the gate is detaching the water surface, note that this is a different video
-treat_synch_idx = 11813     # " " treament start maximum of curve
+treat_synch_frame  = 128       # load vid_2 stack first frame where finger is not on sensor anymore
+treat_start_frame  = 762       # frame ID where the gate is detaching the water surface, note that this is a different video
+treat_synch_idx    = 11813     # " " treament start maximum of curve
 # -------  END INPUT  ---------------
 
 seconds_between_acclim_and_treat = (treat_synch_idx-acclim_synch_idx)/5
@@ -69,7 +65,6 @@ time_conversion_path = os.path.join(out_data_folder, time_output)
 acclim_temp_path = os.path.join(out_data_folder, acclim_temp_out)
 treat_temp_path = os.path.join(out_data_folder, treat_temp_out)
 
-    
 if not os.path.exists(out_data_folder):
     os.makedirs(out_data_folder)
     
@@ -82,9 +77,6 @@ df = df.drop([0, 1]).reset_index(drop=True) # drop 2 useless rows, reset index
 
 cols = df.columns[1:9]
 df[cols] = df[cols].apply(pd.to_numeric, errors='coerce', axis=1) # convert to float
-
-
-
 
 # constant for all experiments 
 treat_dur = 21 # in minutes
@@ -123,8 +115,6 @@ try:
     treat_synch_time = datetime.datetime.strptime(df.loc[treat_synch_idx,'TIMESTAMP'], '%Y-%m-%d %H:%M:%S.%f')
 except ValueError:              
     treat_synch_time = datetime.datetime.strptime(df.loc[treat_synch_idx,'TIMESTAMP'], '%Y-%m-%d %H:%M:%S')
-    
-    
     
 # derive timelag between synchronization and experimental start (for both acclimatization and treatment)
 dt_acclim = (acclim_start_frame - acclim_synch_frame) * 1/24  # [seconds] this time needs to be added to get the actual start time of the experimental phase 
