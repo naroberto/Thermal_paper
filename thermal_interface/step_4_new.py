@@ -1,25 +1,36 @@
 
-""" -------------- NEW VERSION of step_4 --------------------
-
+""" 
 Created on Wed Feb 1 11:11:01 2023
 
 @author: rob
 
 Goal:
-    - get the gradient line (laplacian) for each frame, 
-    - (here we store) x and y coords of the laplacian for each time step
-    - we post-process this so the line is continous and does not contain wrong detections at the water-line or bottom of the tank
-    - output this as exp_id_Treat_grad.npy,
+    - get the thermal gradient line (laplacian) for each frame, store x and y coords of the laplacian for each time step
+
+Descritpion:
+    - subtract red from green channel to remove fish itself and remain with gradient info. 
+    - rescale to 8 bit image
+    - Apply threshholding, fill holes, Dilate and Erode twice, apply laplacian function, get 
+
+    Post-processing: 
+    - smooth line 
+    - kick out water-line detecion or bottom of the tank
+    - output this as exp_id_Treat_grad.npy
     
 """
+# -------------- FINAL VERSION of step_4 --------------------
+
+# import libraries 
 import pandas as pd
 import numpy as np
 import os
 import cv2 as cv2
 from time import process_time
-cv2.destroyAllWindows()  
 from scipy import ndimage as nd
+from collections import Counter
+
 t1_start = process_time()
+cv2.destroyAllWindows()  
 
 # INPUTS # note that exp 21 is broken !  raw images in: (/Volumes/4_Results/Backup_thermal/all_data/Final_runs/05_07/Final/run_1/treat_side_red)
 exps      = [37] # [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,26,27,28,29,30,31,32,      #[1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20] #[17]        # [5,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45] # cold: [1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20] # note that control does not have a thermal signal!!
@@ -27,11 +38,11 @@ treat_dur = 20         # [minutes]
 
 # conversion constants
 meta_real_width   = 202    # cm this paramter is the width of the ima ges, it shoudl remain const. and is used for each experiment in the tracking (TRex procedure), we use it to convert pix  to cm
-frame_width  =     1840   # pixel constant
+frame_width  =     1840    # pixel constant
 frame_height =      276    # pixel constant
 pix_per_cm   = frame_width/meta_real_width
 
-# show intermediate image analysis steps steps 
+# show intermediate image analysis steps 
 save_data =      True
 show_workflow =  False
 save_post_process_data = True
@@ -67,24 +78,18 @@ print('-----------------------------------------')
 
 phase = 'treat'
 
-#%% Functions
-
-# function
+# Functions
 def interpolate_nan(y):  # interpolate nans -> no nans anymore: source: https://stackoverflow.com/questions/6518811/interpolate-nan-values-in-a-numpy-array  
     nans = np.isnan(y)
-   
     x = lambda z: z.nonzero()[0]
-    
     y[nans]= np.interp(x(nans), x(~nans), y[~nans])
     return y.round(3)
 
-from collections import Counter
-
-# functions for gradient post processing
+# Gradient post processing
 def non_unique(lst):
   return [item for item, count in Counter(lst).items() if count > 1] # print(non_unique([1, 2, 2, 3, 4, 4, 5]))
 
-def grad_filter_warm(x,y):               # input in pixel units
+def grad_filter_warm(x,y):          # input in pixel units
     for i in non_unique(x):         # list containing all non-unique x-values, hier hat y(x) mind. 2 lösungen!
         idx = np.where(x == i)[0]   # array indices of non-unique values
         y[idx] = np.max(y[idx])     # replace all non-unique values wiht the max(y) value among those, as the wrong line at the water surface has low values
@@ -92,7 +97,6 @@ def grad_filter_warm(x,y):               # input in pixel units
 
 def smooth_grad_warm(y, y_cm_thresh): # inout in pix units
     y[np.where(y < pix_per_cm * y_cm_thresh )] = np.NaN  # remove values on the water surface are wrong... we remove them 
-    
     if any(np.isfinite(y)):
         y_new = interpolate_nan(y)
     else: # very very rarely this occurs... but it breaks otherweise
@@ -117,8 +121,6 @@ def subtract_rescale(r,g,R_zero):
         #min_pix_value = np.min(res) # check if rescaling makes sense
         #if min_pix_value <  - R_zero:
             #print('this should not be below -20: ', min_pix_value)
-        
-        
         #print(res)
         
         # Fre approach - reshift pixel values to positive values
@@ -131,19 +133,15 @@ def subtract_rescale(r,g,R_zero):
         scale_frame = np.where(scale_frame < R_min, R_zero, scale_frame) # get values that are still negative
         scale_frame = np.where(scale_frame > R_max, R_max, scale_frame) # get values that are too large
     
-        
         return cv2.bitwise_not(scale_frame.astype('uint8')) # convert to 8bit and invert it so ink is 
-    
-    
-def get_gradient (r_list, g_list, thresh_grey):
-        
-        grad = {}
- 
-        i , j   = [], []
 
+# Obtain gradient line:
+def get_gradient (r_list, g_list, thresh_grey):
+    
+        grad = {}
+        i , j   = [], []
         total_frames = len(g_list)-1
         print('-> processing frame: ')
-        
         
         for i,j,t in zip(r_list,g_list,range(0,total_frames)):   # grab red and green images for through all times, bth list have the sam length as per preprocessing
             
@@ -154,13 +152,10 @@ def get_gradient (r_list, g_list, thresh_grey):
             r = cv2.imread(os.path.join(r_path, i),0)    # red channel as greyscale
             g = cv2.imread(os.path.join(g_path, j),0)    # green ch as grey
         
-            # convert to signal 
-            ink = subtract_rescale(r,g,R_zero)
-                  
-            # create white inside mask
-            mask_1 = np.zeros(ink.shape[:2], dtype=np.uint8)  # empty mask
+            ink = subtract_rescale(r,g,R_zero)                    # convert to signal 
+            mask_1 = np.zeros(ink.shape[:2], dtype=np.uint8)      # empty mask
             
-            # threshhold according to sattel point  thresh_grey is crucial here !
+            # threshhold according to sattel point thresh_grey is used here!
             binary = np.where(ink > thresh_grey,255, mask_1) 
             
             # fill holes
@@ -169,7 +164,7 @@ def get_gradient (r_list, g_list, thresh_grey):
             # convert bool img to 8 bit image
             f = np.where(filled == True,255,0).astype('uint8')
             
-            # dilate erode twice ! -> to enlarge grad on the borders! 
+            # dilate and erode twice ! -> to enlarge grad on the borders! 
             d_e = f.copy()
             
             kernel = np.ones((10,10), np.uint8)
@@ -205,8 +200,7 @@ def get_gradient (r_list, g_list, thresh_grey):
             ink_grad =  cv2.cvtColor(gray,cv2.COLOR_GRAY2RGB)
             ink_grad[l == 255] = (0,0,255)
             
-            
-            if show_workflow:
+            if show_workflow: # just to visualize whats happening
                 cv2.putText(ink_grad,'Laplacian',(5,30),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,255),thickness=2)
                 cv2.putText(ink,'ink signal, frame: ' + str(t) ,(5,30),cv2.FONT_HERSHEY_SIMPLEX,1,(0,0,0),thickness=2)
                 cv2.putText(l,'Cleaned Laplacian',(5,30),cv2.FONT_HERSHEY_SIMPLEX,1,(255,0,0),thickness=2)
@@ -233,8 +227,6 @@ def get_gradient (r_list, g_list, thresh_grey):
                     
         return grad             # this contains the laplacian for each frame, dtype = dictionary 
 
-            
- 
 #%% Part 1 - main loop - get laplacian line form images
 for exp in exps: 
     
@@ -264,11 +256,7 @@ for exp in exps:
         print('Laplacian saved to:'  )
         print(output_npz_file)
 
-# Stop the stopwatch / counter
-t1_stop = process_time()
-print("Elapsed time in minutes: ", round((t1_stop-t1_start) / 60,1) )
-
-#%% Part 2 - Post_process - this can be run independently!
+#%% Part 2 - Post_process - this can be run independently!, goal: remove water level line which was sometimes detected
 print('Post-process laplacian') 
 
 for exp in exps: 
@@ -276,8 +264,7 @@ for exp in exps:
     
     in_dir = out_path # reload previously saved file
     grad   = np.load(in_dir + 'exp_' + str(exp) + '_laplacian.npy',allow_pickle=True).item() # load raw version that was created in the step above... 
-    
-    # Post-processing, goal: remove water level line which was sometimes detected
+ 
     grad_post = {}
 
     for i in range(0,len(grad)): # each fram has one gradient line
@@ -293,7 +280,7 @@ for exp in exps:
         
         # filter out water-line, (over write non-unique values with max(y) )
         if exp > 24:        # warm treats
-            y_grad_f = grad_filter_warm(x_sort,y_sort)                  # we hereby kick out the wrong water-line, hence there are some wrong points remaining, those we will smotth out later
+            y_grad_f = grad_filter_warm(x_sort,y_sort)                   # we hereby kick out the wrong water-line, hence there are some wrong points remaining, those we will smotth out later
             y_grad   = smooth_grad_warm(y_grad_f, y_cm_thresh = 5)       # remove outliers
             
         else:               # cold treats remove outliers based on other criteria (see function)
@@ -308,5 +295,7 @@ for exp in exps:
         output_npz_file = out_path + 'exp_' + str(exp) + '_laplacian_post' # treatment only...
         np.save(output_npz_file, grad_post)
 
-
+# Stop the stopwatch / counter
+t1_stop = process_time()
+print("Elapsed time in minutes: ", round((t1_stop-t1_start) / 60,1) )
 print('------- step_4 complete -------')
