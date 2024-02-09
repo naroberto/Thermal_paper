@@ -4,19 +4,20 @@ Created on Tue Oct 12 14:28:16 2021
 
 @author: Naudascher
 
+Goal: 
+This code prepares the green image channel for tracking in TRex (acclimation and treatment phase)
+
 Description: 
-Run it for acclimation and treatment phase of each experiment.
-This code prepares the green image channel for tracking in TRex. 
-- subtract the temporal median background from each pixel
+- subtract the temporal median background from each pixel.
 - rescale the image to 8 bit
 - mask pixels with high temporal STD to reduce noise
 
-Input: 
+Input:
 - green channel .tif images (from step 4 and 6) 
 
-Output: 
+Output:
 - raw_video in (.mp4)
-- Background sibtracted video for tracking in TRex
+- Background subtracted video for tracking in TRex
 - conversion parameters (.txt)
 
 """
@@ -24,12 +25,12 @@ import numpy as np
 import pandas as pd
 import tracktor as tr
 import cv2
-print('Version of openCV: ', cv2.__version__)
 import sys
 import scipy.signal
 import os
 from scipy.optimize import linear_sum_assignment
 from scipy.spatial.distance import cdist
+print('Version of openCV: ', cv2.__version__) # check version
 
 # -----  INPUT  -------
 dates = ['29_06','01_07','02_07','04_07'] #,'05_07','06_07','07_07','08_07','09_07']
@@ -40,9 +41,9 @@ codec = 'MP4V'   # compression codec
 
 # PARAMS for background subtraction, kept constant for all experiments
 frame_skip_median = 2*24 # use every 48th frame (0.5 fps) for median, this increases speed, not every frame is needed to derive a median... 
-R_zero = 240        # rescaling value for zero values
-R_min = 1           # new min value in rescaled range
-R_max = 255   
+R_zero = 240             # rescaling value for zero values
+R_min = 1                # new min value in rescaled range
+R_max = 255              # max value
 
 # ---------------------
 
@@ -59,6 +60,7 @@ for date in dates:
             in_dir =          os.path.join(r'D:\Thermal_exp\Final_runs',date,'Final',run,phase)
             
             # FUNCTIONS ------------
+            # Calculate the median background from a subset of frames to be used for background subtraction.
             def getMedian(start_frame_phase, frame_skip_median):
                 list_median = list_all[0::frame_skip_median]         # all frames for median of that period
             
@@ -81,20 +83,11 @@ for date in dates:
                 # Calculate Median Background
                 median = np.median(frames, axis=0).astype(dtype=np.uint8)     #
                 std_dev = np.std(frames, axis = 0).astype(dtype= np.uint8)
-                #max_background = np.max(frames, axis=0).astype(dtype=np.uint8)
-                #cv2.imshow('median Baseflow', median)  
-                #cv2.imshow('std_dev',std_dev)
-                #cv2.waitKey()
-                #cv2.destroyAllWindows() 
-                #maximum = np.max(frames,axis=0).astype(dtype=np.uint8)
-                #median  = median.astype(np.int32) 
-                
                 median_grey = median.astype(np.int32)     
-                # enlarge for Fre
-                #cv2.imwrite(os.path.join(out_dir_median, exp_ID + '_median.tif'),median_grey)
-                #cv2.imwrite(os.path.join(out_dir_median, exp_ID + '_std_dev.tif'),std_dev)
+
                 return median_grey, std_dev
-            
+
+            # Subtracts the median background from each frame, rescales the pixel values, and optionally masks regions with high standard deviation for side camera footage.
             def subtractMedian2(frame,median_grey,R_zero,R_min,R_max):
                 # Subtract median
                 frame_grey = np.array(cv2.cvtColor(np.uint8(frame), cv2.COLOR_RGB2GRAY))
@@ -111,9 +104,7 @@ for date in dates:
             # Median background
             list_all = os.listdir(in_dir) # all frames of that phase are already in one folder
             median,std_ = getMedian(0, frame_skip_median)
-           
-            # video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) - 1  # Check length of video!
-           
+
             video_length = int(len(list_all))  # total frames
             print('Total frames: ', video_length)
             
@@ -146,7 +137,7 @@ for date in dates:
                     
                     # for side camera we mask pixel values with high std, to reduce tracking probelm later on.
                     if phase == 'acclim_side_green' or phase == 'treat_side_green':
-                        frame[0:30,:] = 240             # set very top to grey
+                        frame[0:30,:] = 240                # set very top to grey
                         std_mask = frame[30:50,:]
                         std_mask[std_[30:50,:] > 20] = 240 # set values with high std_dev to white so they do not disturb tracking; these are regions with waves..
                         frame[30:50,:] = std_mask          # overwrite pixels in the area of water surface, here we have lots of fluctuations
