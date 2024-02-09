@@ -4,7 +4,8 @@ Created on Tue Jul 20 18:48:40 2021
 @author: Naudascher
 
 Description: 
-This script is for the top and side camera during acclimation phase (first 15 minutes during which the fish are in the left compartment)
+This script is for the top and side camera during acclimation phase (first 15 minutes; fish are in the left compartment).
+Here we split the RGB image into RED and GREEN channel. 
 
 Input:  Output of step_2 and 3 (cropped and rotated color images and time conversion file.txt).
 Output: RED and GREEN channel of each image, time stamped in the file name.
@@ -34,7 +35,7 @@ for date in dates:
         g_side_path = os.path.join('G:\Thermal_exp\Final_runs', date, 'Final', run, 'acclim_side_green')
         r_top_path  = os.path.join('G:\Thermal_exp\Final_runs', date, 'Final', run, 'acclim_top_red')
         g_top_path  = os.path.join('G:\Thermal_exp\Final_runs', date, 'Final', run, 'acclim_top_green')
-        
+
         if not os.path.exists(r_side_path):
             os.makedirs(r_side_path)
             
@@ -50,7 +51,7 @@ for date in dates:
         list_all = os.listdir(in_dir_side_acclim)   # list with all input images
         acclim_dur = 15*60*24                       # 15 minutes of acclimation at 24 fps -> N frames
         
-        ## Read time file
+        ## Read time conversion file
         with open(time_file) as f:
             contents = f.readlines()
         
@@ -87,7 +88,7 @@ for date in dates:
                 img_top = cv2.imread(os.path.join(in_dir_top_acclim, i))
                 blue, green_top, red_top = cv2.split(img_top)
                 
-                cv2.imwrite(os.path.join(r_top_path,"%05d_red_" + time_stamp_str + ".tif") % count, red_top) # Write the results to output location.
+                cv2.imwrite(os.path.join(r_top_path,"%05d_red_" + time_stamp_str + ".tif") % count, red_top)     # Write the results to output location.
                 cv2.imwrite(os.path.join(g_top_path,"%05d_green_" + time_stamp_str + ".tif") % count, green_top) # Write the results back to output location.
                 
                 count = count + 1  # Use all frames                   #count += skip_frame # skip the frames
