@@ -1,25 +1,23 @@
 
 """ 
-Created on Wed Feb 1 11:11:01 2023
-
+# -------------- FINAL VERSION of step_4 --------------------
+Adapted on Wed Feb 1 11:11:01 2023
 @author: rob
 
 Goal:
     - get the thermal gradient line (laplacian) for each frame, store x and y coords of the laplacian for each time step
 
 Descritpion:
-Get line from each image: 
-    - subtract red from green channel to remove fish itself and remain with gradient info. 
+Part 1: Obtain thermal line for each image: 
+    - subtract red from green channel (to removes fish itself and backgraoudn features)
     - rescale to 8 bit image
-    - Apply threshholding, fill holes, Dilate and Erode twice, apply laplacian function, get 
+    - Apply threshholding, fill holes, Dilate and Erode twice, apply laplacian function
 
-Post-processing: 
-    - smooth line 
-    - kick out water-line detecion or bottom of the tank
-    - output this as exp_id_Treat_grad.npy (X,Y,t) data fiel to be used fot further analysis
-    
+Part 2: Post-processing: 
+    - smooth gradient line
+    - kick out false detecion of water-surface or bottom of the tank
+    - output final line as this as (X,Y,t) exp_id_Treat_grad.npy, (used fot further analysis)
 """
-# -------------- FINAL VERSION of step_4 --------------------
 
 # import libraries 
 import pandas as pd
