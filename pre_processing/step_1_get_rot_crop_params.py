@@ -12,23 +12,21 @@ Created on Thu Jul 15 15:50:40 2021
 # - select 5 or more points along the upper edge of the tank, the script will rotate the image so this line becomes horizontal
 # - store that rotation angle 
 # - Crop image to size: according to h, w, dx 
-# - store rotation and crop parametrers for further use in step_2
+# - store rotation and crop parameters for further use in step_2
 # - this only has to be run for the side came (in this publication)
 
 # Output: The center of rotation (and origin of the coordinate system) and the size of each image, will be identical on each image and across experiments.
 
 """
-
 # - do it for side cam (center of rotation is upper left corner of aquarium)
-
-import cv2
-import numpy as np
-import os
+import cv2              # Import the OpenCV library for image processing
+import numpy as np      # Import numpy for numerical operations
+import os               # Import the os module for interacting with the operating system
 
 # select input
 date = '09_07'
-top_cam = False # select side cam
-pre_rot_180 = 0 # only if the video needs to be pre_rotated -> fish acclim area shoudl always be on the left
+top_cam = False     # select side cam
+pre_rot_180 = 0     # Set to 1 only if the video needs to be pre-rotated -> fish acclimation area should always be on the left
 
 # Select folder with calibration image
 # TOP CAM
@@ -43,23 +41,18 @@ if top_cam:
     
 # SIDE CAM
 else:
-    #in_dir:  str = r'D:\Thermal_exp\Final_runs\01_07\Final\crop_rot_params_side'   
-    in_dir = os.path.join('F:\Thermal_exp\Final_runs', date,'Final\crop_rot_params_side_run_1' ) #in_dir = os.path.join('D:\Thermal_exp\Final_runs', date,'Final\crop_rot_params_side_run_1' )
+    in_dir = os.path.join('F:\Thermal_exp\Final_runs', date,'Final\crop_rot_params_side_run_1' ) 
     # cropping extent side_cam -> divideable by 2 !!    
     h = 276
     w = 1840
     dx = 0
     pre_rot_180 = 0 # side cam always ok
-    #Nametxt:  str = r"D:\Thermal_exp\Final_runs\29_06\side_cam\crop_rot_params\params.txt"
-    #out_path: str = r"D:\Thermal_exp\Final_runs\29_06\side_cam\crop_rot_params\cal_img_rot_crop.tif"
-        
 
 # CREATE file path
 in_path = os.path.join(in_dir,'cal_img.tif')
 # output 
-Nametxt = os.path.join(in_dir,'params.txt')
+Nametxt  = os.path.join(in_dir,'params.txt')
 out_path = os.path.join(in_dir, 'cal_img_rot_crop.tif')
-
 
 # cropping extent top_cam 
 # set area to be set to 0 below edge to avoid reflections on the wall
@@ -70,7 +63,7 @@ x_cord = []
 y_cord = []
 rot_angle_all = [] # angle between horizontal and shoreline
 
-# FUNCTIONS
+# FUNCTIONS --------------------------------------------------------
 def click_event(event, x, y, flags, params):
 # Function to display and store the coordinates of Rot_center and the rot_angle_
 # First click -> center for rotation, click at the upper intersection of the arena
@@ -79,21 +72,18 @@ def click_event(event, x, y, flags, params):
     # checking for left mouse clicks
     if event == cv2.EVENT_LBUTTONDOWN:
 
-        # displaying the coordinates
-        # on the Shell
+        # displaying the coordinates on the Shell
         print(x, ' ', y)
-
         x_cord.append(x) # List with all x-coordinates
         y_cord.append(y) # List with all y-coordinates
 
-        # displaying the coordinates
-        # on the image window
+        # displaying the coordinates on the image window
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(img, str(x) + ',' +
                     str(y), (x,y), font,
                     1, (255, 0, 0), 2)
-
-        cv2.imshow('image', img)
+        cv2.imshow('image', img) # show image again
+        
         # calc rotation angle between side and horizontal
         if len(x_cord) >= 2  :
             deltaY = y - y_cord[0]
@@ -101,44 +91,30 @@ def click_event(event, x, y, flags, params):
             angle = np.arctan(deltaY / deltaX) * 180 / np.pi
             rot_angle_all.append(angle)
 
+def rotate_keep_orig_dim(image, angle, cX, cY):              # see also: https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
+    height, width = img.shape[:2]                            # grab the dimensions of the image
+    M = cv2.getRotationMatrix2D((cX, cY), angle, 1.0)        # grab the rotation matrix (applying angle to rotate counter clockwise)
+    return cv2.warpAffine(image, M, (width,height))          # perform the actual rotation and return the image, size of the image wo'nt have changed
 
-def rotate_keep_orig_dim(image, angle, cX, cY):  # see also: https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
-    # grab the dimensions of the image
-    height, width = img.shape[:2]
-    # grab the rotation matrix (applying angle to rotate counter clockwise)
-    M = cv2.getRotationMatrix2D((cX, cY), angle, 1.0)
-    # perform the actual rotation and return the image, size of the image wo'nt have changed
-    return cv2.warpAffine(image, M, (width,height))
-
-
-# driver function
+# Driver function
 if __name__=="__main__":
-
- # reading the image
-    img = cv2.imread(in_path, 1)
     
-    if pre_rot_180: # some top_videos are for some reason fliped by 180 degrees !!!
+    img = cv2.imread(in_path, 1) # read the image
+    
+    if pre_rot_180:                 # some top_videos are fliped by 180 degrees !!!
         img = cv2.rotate(img, cv2.ROTATE_180) 
    
-    height, width = img.shape[:2]
+    height, width = img.shape[:2] # dimensions
     cv2.namedWindow('image', cv2.WINDOW_NORMAL)
     cv2.resizeWindow('image', width, height)
     cv2.imshow('image', img)
-
-    # setting mouse hadler for the image
-    # and calling the click_event() function
-    cv2.setMouseCallback('image', click_event)
-
-    # wait for a key to be pressed to exit
-    cv2.waitKey(0)
-
-    # close the window
-    cv2.destroyAllWindows()
+    cv2.setMouseCallback('image', click_event)     # setting mouse hadler for the image and calling the click_event() function
+    cv2.waitKey(0)                                 # wait for a key to be pressed to exit
+    cv2.destroyAllWindows()   # close the window
 
     # Calc mean rotation angle
     rot_angle_mean = round(np.mean(rot_angle_all),7)
-
-
+    
 img = cv2.imread(in_path, 1)
 if pre_rot_180: # some top_videos are for some reason fliped by 180 degrees !!!
         img = cv2.rotate(img, cv2.ROTATE_180) 
@@ -148,7 +124,6 @@ cv2.namedWindow('rotated', cv2.WINDOW_NORMAL)
 cv2.resizeWindow('rotated', width, height)
 #rotated = imutils.rotate(img, rot_angle_mean) # rotates around center of image!!
 
- 
 rotated = rotate_keep_orig_dim(img, rot_angle_mean,x_cord[0],y_cord[0])
 
 cv2.imshow("rotated", rotated)
@@ -180,14 +155,13 @@ cv2.imwrite(out_path, rotated_crop) # Write the results to output location.
 if rotated_crop.shape[1] < 1900 or rotated_crop.shape[0] < 204:
     print('relocate rot center')
 
-
 # Print to console
 #print('First point = selected Rotation Point (x,y) : ', x_R, ',', y_R) # + ',' + str(y_cord(1)))
 #print('All rotation angles: ', rot_angle_all)
 #print('Mean rotation angle: ', rot_angle_mean)
 #print('Dimensions of cropped image (width,height) : ', w, ',', h)
 
-## WRITE TO .txt
+## WRITE OUTPUT PARAMETERS TO .txt, (they will be used to process the entire video later...) 
 
 outF = open(Nametxt, "w")
 #for line in [header]: # , basestart]:
